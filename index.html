@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Tracker</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+    
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Poppins', sans-serif;
+        background: url('background.png') no-repeat center center fixed;
+        background-size: cover;
+        color: white;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    /* Glass Panel */
+    .container {
+        position: absolute;
+        top: 120px;
+        left: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        width: 280px;
+    }
+
+    /* Timer */
+    .timer {
+        font-size: 2.5rem;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    button {
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    button:hover {
+        background: rgba(255, 255, 255, 0.35);
+    }
+
+    /* To-do */
+    .todo input {
+        padding: 6px;
+        width: calc(100% - 70px);
+        border: none;
+        border-radius: 4px;
+        outline: none;
+    }
+    ul {
+        list-style: none;
+        padding: 0;
+        margin: 10px 0 0;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+    li {
+        background: rgba(255, 255, 255, 0.15);
+        margin: 5px 0;
+        padding: 6px 8px;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+    li.done {
+        text-decoration: line-through;
+        opacity: 0.6;
+    }
+
+    /* Quotes box */
+    .quote-box {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 15px;
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        width: 280px;
+        font-size: 0.95rem;
+        font-style: italic;
+        line-height: 1.4rem;
+    }
+
+    /* Main Goal */
+    .main-goal {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        padding: 15px 25px;
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        width: 400px;
+    }
+    .goal-text {
+        font-size: 1.2rem;
+        font-weight: 500;
+        cursor: pointer;
+        color: #ddd;
+    }
+    .goal-text.active {
+        color: white;
+        font-weight: 600;
+    }
+    .goal-input {
+        width: 100%;
+        padding: 8px;
+        border: none;
+        border-radius: 8px;
+        outline: none;
+        font-size: 1rem;
+    }
+    .goal-progress {
+        margin-top: 8px;
+        height: 6px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .goal-progress-bar {
+        height: 100%;
+        width: 0%;
+        background: limegreen;
+        transition: width 0.3s ease;
+    }
+</style>
+</head>
+<body>
+
+<!-- Main Goal -->
+<div class="main-goal">
+    <div id="goalText" class="goal-text">What's your main goal for today?</div>
+    <div class="goal-progress">
+        <div id="goalProgressBar" class="goal-progress-bar"></div>
+    </div>
+</div>
+
+<!-- Timer + To-do Panel -->
+<div class="container">
+    <div class="timer" id="timer">00:00:00</div>
+    <div style="display: flex; gap: 5px; justify-content: center;">
+        <button onclick="toggleTimer()">Start / Pause</button>
+        <button onclick="resetTimer()">Reset</button>
+        <button onclick="switchMode()">Switch</button>
+    </div>
+
+    <div class="todo">
+        <input type="text" id="todoInput" placeholder="Add a task...">
+        <button onclick="addTodo()">Add</button>
+        <ul id="todoList"></ul>
+    </div>
+</div>
+
+<!-- Quotes -->
+<div class="quote-box" id="quoteBox"></div>
+
+<script>
+let timerInterval;
+let seconds = 0;
+let running = false;
+let countdownMode = false;
+let countdownStart = 25 * 60;
+
+// Timer Functions
+function updateTimerDisplay() {
+    let displaySeconds = countdownMode ? countdownStart - seconds : seconds;
+    if (displaySeconds < 0) displaySeconds = 0;
+    let hrs = String(Math.floor(displaySeconds / 3600)).padStart(2, '0');
+    let mins = String(Math.floor((displaySeconds % 3600) / 60)).padStart(2, '0');
+    let secs = String(displaySeconds % 60).padStart(2, '0');
+    document.getElementById('timer').textContent = `${hrs}:${mins}:${secs}`;
+}
+function toggleTimer() {
+    if (running) {
+        clearInterval(timerInterval);
+    } else {
+        timerInterval = setInterval(() => {
+            seconds++;
+            updateTimerDisplay();
+        }, 1000);
+    }
+    running = !running;
+}
+function resetTimer() {
+    clearInterval(timerInterval);
+    seconds = 0;
+    running = false;
+    updateTimerDisplay();
+}
+function switchMode() {
+    countdownMode = !countdownMode;
+    seconds = 0;
+    updateTimerDisplay();
+}
+
+// To-do List
+function addTodo() {
+    const input = document.getElementById('todoInput');
+    if (!input.value.trim()) return;
+    const li = document.createElement('li');
+    li.textContent = input.value;
+    li.onclick = () => {
+        li.classList.toggle('done');
+        updateGoalProgress();
+    };
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '✕';
+    delBtn.onclick = (e) => { 
+        e.stopPropagation(); 
+        li.remove();
+        updateGoalProgress();
+    };
+    li.appendChild(delBtn);
+    document.getElementById('todoList').appendChild(li);
+    input.value = '';
+    updateGoalProgress();
+}
+
+// Quotes
+const quotes = [
+    "Don’t watch the clock; do what it does. Keep going.",
+    "Success is the sum of small efforts repeated day in and day out.",
+    "The future depends on what you do today.",
+    "Push yourself, because no one else is going to do it for you.",
+    "It always seems impossible until it’s done.",
+    "Small progress is still progress."
+];
+document.getElementById('quoteBox').textContent = quotes[Math.floor(Math.random() * quotes.length)];
+
+// Main Goal Feature
+const goalTextEl = document.getElementById('goalText');
+goalTextEl.addEventListener('click', () => {
+    const currentGoal = goalTextEl.classList.contains('active') ? goalTextEl.textContent : "";
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'goal-input';
+    input.value = currentGoal === "What's your main goal for today?" ? "" : currentGoal;
+    goalTextEl.replaceWith(input);
+    input.focus();
+
+    input.addEventListener('blur', () => {
+        const newGoal = input.value.trim() || "What's your main goal for today?";
+        goalTextEl.textContent = newGoal;
+        goalTextEl.classList.toggle('active', newGoal !== "What's your main goal for today?");
+        input.replaceWith(goalTextEl);
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') input.blur();
+    });
+});
+
+// Goal Progress Bar
+function updateGoalProgress() {
+    const tasks = document.querySelectorAll('#todoList li');
+    const doneTasks = document.querySelectorAll('#todoList li.done');
+    const progress = tasks.length ? (doneTasks.length / tasks.length) * 100 : 0;
+    document.getElementById('goalProgressBar').style.width = `${progress}%`;
+}
+
+updateTimerDisplay();
+</script>
+
+</body>
+</html>
