@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Study Tracker</title>
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
-    
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&family=Homemade+Apple&display=swap');
+
     body {
         margin: 0;
         padding: 0;
@@ -28,11 +28,9 @@
         gap: 20px;
         background: rgba(255, 255, 255, 0.15);
         backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
         padding: 20px;
         border-radius: 15px;
         box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-        border: 1px solid rgba(255, 255, 255, 0.3);
         width: 280px;
     }
 
@@ -57,32 +55,30 @@
     }
 
     /* To-do */
-    .todo input {
-        padding: 6px;
-        width: calc(100% - 70px);
-        border: none;
-        border-radius: 4px;
-        outline: none;
-    }
-    ul {
+    .todo ul {
         list-style: none;
         padding: 0;
         margin: 10px 0 0;
         max-height: 150px;
         overflow-y: auto;
     }
-    li {
+    .todo li {
+        display: flex;
+        align-items: center;
         background: rgba(255, 255, 255, 0.15);
         margin: 5px 0;
         padding: 6px 8px;
         border-radius: 4px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
         font-size: 0.9rem;
+    }
+    .todo input[type="checkbox"] {
+        margin-right: 8px;
+    }
+    .todo label {
+        flex: 1;
         cursor: pointer;
     }
-    li.done {
+    .todo label.done {
         text-decoration: line-through;
         opacity: 0.6;
     }
@@ -94,15 +90,12 @@
         right: 20px;
         background: rgba(255, 255, 255, 0.15);
         backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
         padding: 15px;
         border-radius: 15px;
         box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-        border: 1px solid rgba(255, 255, 255, 0.3);
         width: 280px;
         font-size: 0.95rem;
         font-style: italic;
-        line-height: 1.4rem;
     }
 
     /* Main Goal */
@@ -114,11 +107,9 @@
         text-align: center;
         background: rgba(255, 255, 255, 0.15);
         backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
         padding: 15px 25px;
         border-radius: 15px;
         box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-        border: 1px solid rgba(255, 255, 255, 0.3);
         width: 400px;
     }
     .goal-text {
@@ -152,6 +143,28 @@
         background: limegreen;
         transition: width 0.3s ease;
     }
+
+    /* Notepad */
+    .notepad {
+        display: none;
+        position: absolute;
+        top: 80px;
+        right: 50%;
+        transform: translateX(50%);
+        width: 500px;
+        height: 400px;
+        background: #fdf6e3 url('https://i.imgur.com/EkSYE6K.png') repeat-y; /* pale yellow with ruled lines */
+        background-size: cover;
+        border: 2px solid #c2b280;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        padding: 20px;
+        font-family: 'Homemade Apple', cursive;
+        font-size: 1.2rem;
+        resize: none;
+        overflow-y: auto;
+        z-index: 999;
+    }
 </style>
 </head>
 <body>
@@ -178,10 +191,15 @@
         <button onclick="addTodo()">Add</button>
         <ul id="todoList"></ul>
     </div>
+
+    <button onclick="toggleNotepad()">Notes</button>
 </div>
 
 <!-- Quotes -->
 <div class="quote-box" id="quoteBox"></div>
+
+<!-- Notepad -->
+<textarea id="notepad" class="notepad" placeholder="Write your notes here..."></textarea>
 
 <script>
 let timerInterval;
@@ -190,7 +208,6 @@ let running = false;
 let countdownMode = false;
 let countdownStart = 25 * 60;
 
-// Timer Functions
 function updateTimerDisplay() {
     let displaySeconds = countdownMode ? countdownStart - seconds : seconds;
     if (displaySeconds < 0) displaySeconds = 0;
@@ -222,24 +239,24 @@ function switchMode() {
     updateTimerDisplay();
 }
 
-// To-do List
+// To-do with checkboxes
 function addTodo() {
     const input = document.getElementById('todoInput');
     if (!input.value.trim()) return;
+
     const li = document.createElement('li');
-    li.textContent = input.value;
-    li.onclick = () => {
-        li.classList.toggle('done');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    const label = document.createElement('label');
+    label.textContent = input.value;
+
+    checkbox.addEventListener('change', () => {
+        label.classList.toggle('done', checkbox.checked);
         updateGoalProgress();
-    };
-    const delBtn = document.createElement('button');
-    delBtn.textContent = '✕';
-    delBtn.onclick = (e) => { 
-        e.stopPropagation(); 
-        li.remove();
-        updateGoalProgress();
-    };
-    li.appendChild(delBtn);
+    });
+
+    li.appendChild(checkbox);
+    li.appendChild(label);
     document.getElementById('todoList').appendChild(li);
     input.value = '';
     updateGoalProgress();
@@ -256,7 +273,7 @@ const quotes = [
 ];
 document.getElementById('quoteBox').textContent = quotes[Math.floor(Math.random() * quotes.length)];
 
-// Main Goal Feature
+// Main Goal
 const goalTextEl = document.getElementById('goalText');
 goalTextEl.addEventListener('click', () => {
     const currentGoal = goalTextEl.classList.contains('active') ? goalTextEl.textContent : "";
@@ -279,13 +296,31 @@ goalTextEl.addEventListener('click', () => {
     });
 });
 
-// Goal Progress Bar
+// Goal Progress
 function updateGoalProgress() {
-    const tasks = document.querySelectorAll('#todoList li');
-    const doneTasks = document.querySelectorAll('#todoList li.done');
-    const progress = tasks.length ? (doneTasks.length / tasks.length) * 100 : 0;
+    const checkboxes = document.querySelectorAll('#todoList input[type="checkbox"]');
+    const checked = document.querySelectorAll('#todoList input[type="checkbox"]:checked');
+    const progress = checkboxes.length ? (checked.length / checkboxes.length) * 100 : 0;
     document.getElementById('goalProgressBar').style.width = `${progress}%`;
 }
+
+// Notepad
+function toggleNotepad() {
+    const notepad = document.getElementById('notepad');
+    if (notepad.style.display === 'block') {
+        notepad.style.display = 'none';
+    } else {
+        notepad.style.display = 'block';
+        notepad.focus();
+    }
+}
+
+// Save notes
+const notepadEl = document.getElementById('notepad');
+notepadEl.value = localStorage.getItem('studyNotes') || "";
+notepadEl.addEventListener('input', () => {
+    localStorage.setItem('studyNotes', notepadEl.value);
+});
 
 updateTimerDisplay();
 </script>
